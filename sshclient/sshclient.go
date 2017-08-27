@@ -23,10 +23,7 @@ func CreateClientConfig(username string, sshKey string, sshKeyPass string) *ssh.
 }
 
 func ExecuteCommands(hostname string, commands []string, port string, clientConfig *ssh.ClientConfig) string {
-	fmt.Println(clientConfig.User)
-	if port == "" {
-		port = "22"
-	}
+
 	log.LogInfo.Printf("Running commands on host %s over port %s as user: %s\n", hostname, port, clientConfig.User)
 	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", hostname, port), clientConfig)
 	if err != nil {
