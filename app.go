@@ -68,9 +68,13 @@ func main(){
 	timeout := time.After(5 * time.Second)
 
 	for _, host := range hosts {
-		go func(host string, commands []string, port string, clientConfig *ssh.ClientConfig) {
-			results <- sshclient.ExecuteCommands(host, commands, port, clientConfig)
-		}(host, commands, args.Port, clientConfig)
+		if args.Concurrent {
+			go func(host string, commands []string, port string, clientConfig *ssh.ClientConfig) {
+				results <- sshclient.ExecuteCommands(host, commands, port, clientConfig)
+			}(host, commands, args.Port, clientConfig)
+		} else {
+			results <- sshclient.ExecuteCommands(host, commands, args.Port, clientConfig)
+		}
 	}
 
 	for i := 0; i < len(hosts); i++ {
