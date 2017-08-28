@@ -8,7 +8,7 @@ import (
 
 	"github.com/daniel-cole/GoSSHExecutor/log"
 	"github.com/daniel-cole/GoSSHExecutor/sshclient"
-	"github.com/daniel-cole/GoSSHExecutor/sshExecParser"
+	"github.com/daniel-cole/GoSSHExecutor/sshexecprsr"
 
 	"github.com/alexflint/go-arg"
 	"golang.org/x/crypto/ssh"
@@ -36,7 +36,10 @@ func main(){
 
 	arg.MustParse(&args)
 
-	hosts := sshExecParser.ParseHosts(args.TargetHosts)
+	hosts, err := sshexecprsr.ParseHosts(args.TargetHosts)
+	if err != nil {
+		log.LogFatal("failed to parse hosts", err)
+	}
 
 	fmt.Println("Hosts to run commands on\n-------------------------------------")
 	for index, host := range hosts {
@@ -45,7 +48,7 @@ func main(){
 	fmt.Println("-------------------------------------")
 
 
-	commands := sshExecParser.ParseCommands(args.CommandFile)
+	commands := sshexecprsr.ParseCommands(args.CommandFile)
 
 	fmt.Println("Commands to be executed: \n-------------------------------------")
 	for index, cmd := range commands {
