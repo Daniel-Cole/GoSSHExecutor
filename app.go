@@ -1,4 +1,4 @@
-package GoSSHExecutor
+package main
 
 import (
 	"os"
@@ -12,6 +12,8 @@ import (
 
 	"github.com/alexflint/go-arg"
 	"golang.org/x/crypto/ssh"
+	"bufio"
+	"strings"
 )
 
 type args struct {
@@ -43,9 +45,11 @@ func main(){
 
 	fmt.Println("Hosts to run commands on\n-------------------------------------")
 	for index, host := range hosts {
-		fmt.Printf("%d: %s\n", index, host)
+		fmt.Printf("Host %d: %s\n", index, host)
 	}
 	fmt.Println("-------------------------------------")
+
+	promptContinue("Please confirm that the hosts above are correct and type 'y' to continue; 'n' to abort:\n")
 
 
 	commands := sshexecprsr.ParseCommands(args.CommandFile)
@@ -57,6 +61,8 @@ func main(){
 	fmt.Println("-------------------------------------")
 
 
+	promptContinue("Please confirm that the commands above are correct and type 'y' to continue; 'n' to abort:\n")
+
 	if args.Halt {
 		log.LogInfo.Println("Terminating program prior to execution as halt is set to true.")
 		os.Exit(0)
@@ -65,7 +71,7 @@ func main(){
 	clientConfig := sshclient.CreateClientConfig(args.Username, args.SSHKey, args.SSHKeyPass)
 
 	results := make(chan string)
-	timeout := time.After(5 * time.Second)
+	timeout := time.After(60 * time.Second)
 
 	for _, host := range hosts {
 		if args.Concurrent {
@@ -80,13 +86,27 @@ func main(){
 	for i := 0; i < len(hosts); i++ {
 		select {
 		case res := <- results:
-			fmt.Print(res)
+			fmt.Printf(fmt.Sprintf("\n%s\n", res))
 		case <- timeout:
 			fmt.Println("Timed out waiting for results")
 			return
 		}
 	}
 
+}
+
+func promptContinue(message string) {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Printf(message)
+	text, _ := reader.ReadString('\n')
+	switch strings.TrimRight(text, "\n") {
+	case "y":
+	case "n":
+		log.LogFatal("aborting program due to 'n' character received during confirmation check.", nil)
+	default:
+		fmt.Println("Input not recognised.")
+		promptContinue(message)
+	}
 }
 
 

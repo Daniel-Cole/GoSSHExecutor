@@ -2,7 +2,6 @@ package sshclient
 
 import (
 	"fmt"
-	"bytes"
 	"io/ioutil"
 	"crypto/x509"
 	"encoding/pem"
@@ -29,18 +28,25 @@ func ExecuteCommands(hostname string, commands []string, port string, clientConf
 	if err != nil {
 		log.LogFatal("failed to create ssh connection", err)
 	}
+	defer conn.Close()
 
-	session, _ := conn.NewSession()
-	defer session.Close()
-
-	var stdoutBuf bytes.Buffer
-	session.Stdout = &stdoutBuf
+	var results string
 
 	for _, cmd := range commands {
-		session.Run(cmd)
+
+		session, _ := conn.NewSession()
+
+		cmd_result, err := session.CombinedOutput(cmd)
+		if err != nil {
+			results += fmt.Sprintf("FAIL - %s - %v\n", cmd, err)
+		} else {
+			results += fmt.Sprintf("OK - %s", cmd)
+			results += string(cmd_result)
+		}
+		session.Close()
 	}
 
-	return fmt.Sprintf("%s -> %s", hostname, stdoutBuf.String())
+	return fmt.Sprintf("%s -> %s", hostname, results)
 }
 
 func decryptKey(key []byte, password []byte) []byte {
