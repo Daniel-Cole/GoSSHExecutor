@@ -1,6 +1,7 @@
 package main
 
-import (
+import
+(
 	"os"
 	"fmt"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"bufio"
 	"strings"
+	"github.com/howeyc/gopass"
 )
 
 type args struct {
@@ -24,6 +26,7 @@ type args struct {
 	Port 		string		`arg:"help:The port that is used to connect to the target host. Defaults to 22."`
 	Concurrent 	bool		`arg:"help:Execute Commands Concurrently. Concurrency is enabled by default. To disable use --concurrent=false"`
 	Halt		bool		`arg:"help:If this option is specified the program will terminate after displaying confirmation information."`
+	Timeout 	int32		`arg:"help:This is the maximum time that the program will run for in seconds. Defaults to 60."`
 	TargetHosts []string 	`arg:"positional,help:The target hosts to execute the specified commands against. This can either be a CIDR block or a list of hosts."`
 }
 
@@ -35,6 +38,7 @@ func main(){
 	//set defaults
 	args.Concurrent = true
 	args.Port = "22"
+	args.Timeout = 60
 
 	arg.MustParse(&args)
 
@@ -68,10 +72,14 @@ func main(){
 		os.Exit(0)
 	}
 
+	if args.SSHKeyPass == "" {
+		args.SSHKeyPass = promptPassword()
+	}
+
 	clientConfig := sshclient.CreateClientConfig(args.Username, args.SSHKey, args.SSHKeyPass)
 
 	results := make(chan string)
-	timeout := time.After(60 * time.Second)
+	timeout := time.After(time.Duration(args.Timeout) * time.Second)
 
 	for _, host := range hosts {
 		if args.Concurrent {
@@ -89,7 +97,7 @@ func main(){
 			fmt.Printf(fmt.Sprintf("\n%s\n", res))
 		case <- timeout:
 			fmt.Println("Timed out waiting for results")
-			return
+			os.Exit(0)
 		}
 	}
 
@@ -107,6 +115,15 @@ func promptContinue(message string) {
 		fmt.Println("Input not recognised.")
 		promptContinue(message)
 	}
+}
+
+func promptPassword() string {
+	fmt.Println("Please enter your password (If you have specified an ssh key this will be your ssh key password):")
+	password, err := gopass.GetPasswdMasked()
+	if err != nil {
+		log.LogFatal("failed to get get password input", err)
+	}
+	return string(password)
 }
 
 
