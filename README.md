@@ -16,4 +16,13 @@ using ssh key authentication
 | Halt  | -\-halt  | If this is set to true then the program will terminate prior to execution | boolean
 | Target hosts | -\-targethosts | A list of hosts which are IP addresses or CIDR blocks. i.e. 192.168.0.15 or 10.100.1.0/27 | []string
 
+# Notes
+
+If you wish to run commands as a different user other than the user you are connecting as you must be
+explicit in your command file by specifying who to run the command as. For instance if you want to run a series of
+commands as root:
+1. sudo su root -c "apt-get update"
+2. sudo su root -c "useradd testusr"
+3. echo "test file" > ~/test.txt #this will be executed as the user you connect to the host as
+
 ## Under Construction
